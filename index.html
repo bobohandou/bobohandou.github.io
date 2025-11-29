@@ -360,18 +360,22 @@
             }
         };
 
-        window.morphTo = function(type) {
-            if(!Shapes[type]) return;
-            for(let i=0; i<particleCount; i++) {
-                const pos = Shapes[type](i);
-                targetPositions[i*3] = pos[0];
-                targetPositions[i*3+1] = pos[1];
-                targetPositions[i*3+2] = pos[2];
-            }
-            document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-        };
-        morphTo('heart'); // 默认
+window.morphTo = function(type, e) {
+    if(!Shapes[type]) return;
+
+    // ... 粒子形态切换代码 ...
+
+    // UI更新 (使用传递进来的事件对象 e)
+    document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
+
+    // 确保 e 存在，以防止在其他地方调用 morphTo 时的潜在错误
+    if (e && e.target) {
+        e.target.classList.add('active'); 
+    } else {
+         // 如果是通过代码调用（例如默认调用），则不执行UI更新，或手动找到按钮
+         console.warn("Event object missing for UI update.");
+    }
+};
 
         // --- 4. 音频分析系统 (Audio API) ---
         let analyser, dataArray, audioContext;
@@ -518,3 +522,4 @@
 </body>
 
 </html>
+
