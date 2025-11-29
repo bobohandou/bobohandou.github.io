@@ -337,7 +337,8 @@
 
                 // 将y轴原点调整到钻石中心
                 y -= (h / 2); 
-                return [x, y, z];
+                const VERTICAL_OFFSET = 5.0;
+                return [x, y + VERTICAL_OFFSET, z];
             },
             saturn: (i) => {
                 // 30% 星球，70% 星环
@@ -543,6 +544,7 @@ window.morphTo = function(type, e) {
 </body>
 
 </html>
+
 
 
 
