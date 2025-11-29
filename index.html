@@ -1,0 +1,519 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js 视听粒子系统</title>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .input_video {
+            display: none;
+        }
+
+        /* UI 面板 */
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 20px;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            z-index: 10;
+            width: 240px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            transition: opacity 0.3s;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #888;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        /* 按钮样式 */
+        .grid-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ddd;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+
+            button:hover {
+                background: rgba(255, 255, 255, 0.25);
+                color: white;
+                transform: translateY(-1px);
+            }
+
+            button.active {
+                background: #4f8aff;
+                color: white;
+                box-shadow: 0 0 12px rgba(79, 138, 255, 0.5);
+                font-weight: bold;
+            }
+
+        /* 音乐控制区 */
+        .audio-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+            .file-upload input[type=file] {
+                font-size: 100px;
+                position: absolute;
+                left: 0;
+                top: 0;
+                opacity: 0;
+                cursor: pointer;
+            }
+
+        .file-btn {
+            background: #ff4757;
+            width: 100%;
+            display: block;
+            text-align: center;
+            color: white;
+            padding: 8px 0;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        #mic-btn {
+            background: #2ed573;
+            color: white;
+        }
+
+        /* 颜色与状态 */
+        .control-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 30px;
+            height: 20px;
+            cursor: pointer;
+            background: none;
+        }
+
+        #status-bar {
+            margin-top: 15px;
+            font-size: 11px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .led {
+            width: 6px;
+            height: 6px;
+            background: #333;
+            border-radius: 50%;
+            box-shadow: inset 0 0 2px black;
+        }
+
+            .led.on {
+                background: #00ff00;
+                box-shadow: 0 0 5px #00ff00;
+            }
+
+        /* 加载动画 */
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            z-index: 20;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 10px auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+    <video class="input_video"></video>
+
+    <div id="ui-container">
+        <div class="section">
+            <h2>粒子形态</h2>
+            <div class="grid-buttons">
+                <button onclick="morphTo('heart')" class="active">爱心</button>
+                <button onclick="morphTo('saturn')">土星</button>
+                <button onclick="morphTo('flower')">生命之花</button>
+                <button onclick="morphTo('buddha')">打坐</button>
+                <button onclick="morphTo('dna')">DNA螺旋</button>
+                <button onclick="morphTo('sphere')">球体</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>音乐律动</h2>
+            <div class="audio-controls">
+                <button id="mic-btn" onclick="setupAudio('mic')">🎤 开启麦克风律动</button>
+                <div class="file-upload">
+                    <div class="file-btn">🎵 上传 MP3 音乐</div>
+                    <input type="file" id="audio-file" accept="audio/*" onchange="setupAudio('file', this)">
+                </div>
+            </div>
+            <div class="control-group">
+                <span>粒子颜色</span>
+                <input type="color" id="colorPicker" value="#4f8aff">
+            </div>
+        </div>
+
+        <div id="status-bar">
+            <div class="led" id="cam-led"></div> <span>视觉: <span id="cam-status">初始化...</span></span>
+            <div style="width:10px"></div>
+            <div class="led" id="audio-led"></div> <span>音频: <span id="audio-status">静默</span></span>
+        </div>
+    </div>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <div>启动视觉引擎...<br><span style="font-size:12px; opacity:0.7">请允许摄像头权限</span></div>
+    </div>
+
+    <script>
+        // --- 1. Three.js 场景搭建 ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); // 去掉alpha以获得更黑的背景
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // --- 2. 增强型粒子系统 ---
+        const particleCount = 20000; // 增加粒子数量
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const originalPositions = new Float32Array(particleCount * 3); // 用于复位
+        const targetPositions = new Float32Array(particleCount * 3);
+        const randoms = new Float32Array(particleCount); // 给每个粒子一个随机属性用于闪烁
+
+        for(let i = 0; i < particleCount; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 100;
+            positions[i*3+1] = (Math.random() - 0.5) * 100;
+            positions[i*3+2] = (Math.random() - 0.5) * 100;
+            randoms[i] = Math.random();
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
+
+        const material = new THREE.PointsMaterial({
+            color: 0x4f8aff,
+            size: 0.12,
+            sizeAttenuation: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.9
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // --- 3. 几何形状生成算法 ---
+        function getPoint(r, type) {
+            // 通用球面点生成
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            return {
+                x: r * Math.sin(phi) * Math.cos(theta),
+                y: r * Math.sin(phi) * Math.sin(theta),
+                z: r * Math.cos(phi)
+            };
+        }
+
+        const Shapes = {
+            sphere: (i) => { const p = getPoint(10); return [p.x, p.y, p.z]; },
+            heart: (i) => {
+                const t = Math.random() * Math.PI * 2;
+                let x = 16 * Math.pow(Math.sin(t), 3);
+                let y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+                const z = (Math.random() - 0.5) * 5;
+                return [x * 0.5, y * 0.5, z];
+            },
+            saturn: (i) => {
+                // 30% 星球，70% 星环
+                if (i < particleCount * 0.3) {
+                    const p = getPoint(6); return [p.x, p.y, p.z];
+                } else {
+                    const ang = Math.random() * Math.PI * 2;
+                    const r = 8 + Math.random() * 8;
+                    const x = Math.cos(ang) * r;
+                    const z = Math.sin(ang) * r;
+                    // 倾斜
+                    const tilt = 0.5;
+                    return [x, (Math.random()-0.5)*0.5 + x * Math.sin(tilt), z * Math.cos(tilt)];
+                }
+            },
+            flower: (i) => {
+                const phi = Math.PI * (3 - Math.sqrt(5));
+                const y = 1 - (i / (particleCount - 1)) * 2;
+                const r = Math.sqrt(1 - y * y);
+                const theta = phi * i;
+                const scale = 12;
+                return [Math.cos(theta) * r * scale, y * scale * 0.2, Math.sin(theta) * r * scale];
+            },
+            dna: (i) => {
+                const t = (i / particleCount) * 20 * Math.PI; // 高度
+                const radius = 5;
+                const x = Math.cos(t) * radius;
+                const z = Math.sin(t) * radius;
+                const y = (i / particleCount) * 40 - 20;
+
+                // 双螺旋
+                const offset = i % 2 === 0 ? 0 : Math.PI;
+                return [Math.cos(t + offset) * radius, y, Math.sin(t + offset) * radius];
+            },
+            buddha: (i) => {
+                // 简单的坐姿抽象
+                const r = Math.random();
+                if(r < 0.2) { // 头
+                   const p = getPoint(2.5); return [p.x, p.y + 6, p.z];
+                } else if (r < 0.6) { // 身
+                   const h = (Math.random() - 0.5) * 6;
+                   const rad = 3.5 - (h+3)*0.3;
+                   const ang = Math.random()*Math.PI*2;
+                   return [Math.cos(ang)*rad, h+1, Math.sin(ang)*rad];
+                } else { // 腿
+                   const p = getPoint(6); return [p.x, p.y * 0.4 - 3, p.z];
+                }
+            }
+        };
+
+        window.morphTo = function(type) {
+            if(!Shapes[type]) return;
+            for(let i=0; i<particleCount; i++) {
+                const pos = Shapes[type](i);
+                targetPositions[i*3] = pos[0];
+                targetPositions[i*3+1] = pos[1];
+                targetPositions[i*3+2] = pos[2];
+            }
+            document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        };
+        morphTo('heart'); // 默认
+
+        // --- 4. 音频分析系统 (Audio API) ---
+        let analyser, dataArray, audioContext;
+        let audioAverage = 0; // 用于驱动粒子跳动
+
+        window.setupAudio = async function(sourceType, element) {
+            try {
+                if(!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                // 恢复上下文（浏览器策略）
+                if(audioContext.state === 'suspended') await audioContext.resume();
+
+                // 断开之前的连接（如果有）
+                if(analyser) analyser.disconnect();
+
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 512; // 采样精度
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+
+                let source;
+
+                if (sourceType === 'mic') {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    source = audioContext.createMediaStreamSource(stream);
+                    document.getElementById('audio-status').innerText = "麦克风监听中";
+                } else if (sourceType === 'file') {
+                    const file = element.files[0];
+                    if(!file) return;
+                    const fileUrl = URL.createObjectURL(file);
+                    const audio = new Audio(fileUrl);
+                    audio.play();
+                    source = audioContext.createMediaElementSource(audio);
+                    source.connect(audioContext.destination); // 连接到扬声器听见声音
+                    document.getElementById('audio-status').innerText = "播放音乐中: " + file.name.substring(0,10) + "...";
+                }
+
+                source.connect(analyser);
+                document.getElementById('audio-led').classList.add('on');
+
+            } catch (err) {
+                console.error(err);
+                alert("音频启动失败: " + err.message);
+            }
+        };
+
+        // --- 5. MediaPipe 手势识别 ---
+        let handScale = 1.0;
+        let smoothedHandScale = 1.0;
+
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+
+        hands.onResults(results => {
+            document.getElementById('loader').style.opacity = 0;
+            document.getElementById('cam-led').classList.add('on');
+            document.getElementById('cam-status').innerText = "追踪中";
+
+            if (results.multiHandLandmarks.length > 0) {
+                const lm = results.multiHandLandmarks[0];
+                const d = Math.sqrt(Math.pow(lm[4].x - lm[8].x, 2) + Math.pow(lm[4].y - lm[8].y, 2));
+                // 映射手势距离到缩放: 0.02->0.5, 0.2->2.0
+                handScale = 0.5 + (d * 7);
+            } else {
+                // 无手势时缓慢复原
+                handScale = 1.0;
+            }
+        });
+
+        const video = document.getElementsByClassName('input_video')[0];
+        const cameraUtils = new Camera(video, {
+            onFrame: async () => await hands.send({image: video}),
+            width: 640, height: 480
+        });
+        cameraUtils.start();
+
+        // --- 6. 渲染循环 ---
+        const clock = new THREE.Clock();
+        document.getElementById('colorPicker').addEventListener('input', (e) => material.color.set(e.target.value));
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // A. 处理音频数据
+            let beatPulse = 1.0;
+            if(analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                // 计算低频平均值 (Bass)
+                let sum = 0;
+                // 取前50个频段作为低音区
+                for(let i = 0; i < 50; i++) sum += dataArray[i];
+                audioAverage = sum / 50;
+
+                // 映射音频强度到缩放脉冲 (0 ~ 255 -> 1.0 ~ 1.5)
+                beatPulse = 1.0 + (audioAverage / 255) * 0.6;
+            }
+
+            // B. 结合手势与音乐
+            // 最终缩放 = 手势缩放 * 音乐脉冲
+            // 使用 lerp 平滑手势变化
+            smoothedHandScale += (handScale - smoothedHandScale) * 0.1;
+            const finalScale = smoothedHandScale * beatPulse;
+            particles.scale.setScalar(finalScale);
+
+            // C. 粒子动态更新
+            const pos = geometry.attributes.position.array;
+            for(let i=0; i<particleCount; i++) {
+                const i3 = i*3;
+
+                // 移动向目标形状
+                pos[i3] += (targetPositions[i3] - pos[i3]) * 0.05;
+                pos[i3+1] += (targetPositions[i3+1] - pos[i3+1]) * 0.05;
+                pos[i3+2] += (targetPositions[i3+2] - pos[i3+2]) * 0.05;
+
+                // 音乐带来的高频颤动效果
+                if(audioAverage > 50) {
+                    const noise = (Math.random() - 0.5) * (audioAverage / 500);
+                    pos[i3] += noise;
+                    pos[i3+1] += noise;
+                    pos[i3+2] += noise;
+                }
+            }
+
+            // 旋转场景
+            scene.rotation.y = time * 0.05;
+            // 音乐越强，旋转越快一点
+            scene.rotation.z = Math.sin(time * 0.1) * 0.1 * beatPulse;
+
+            geometry.attributes.position.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
