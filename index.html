@@ -361,20 +361,26 @@
         };
 
 window.morphTo = function(type, e) {
-    if(!Shapes[type]) return;
-
-    // ... 粒子形态切换代码 ...
-
-    // UI更新 (使用传递进来的事件对象 e)
-    document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
-
-    // 确保 e 存在，以防止在其他地方调用 morphTo 时的潜在错误
-    if (e && e.target) {
+    // 确保 UI 逻辑使用 'e' (event object)
+    if (e) { 
+        document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active'); 
-    } else {
-         // 如果是通过代码调用（例如默认调用），则不执行UI更新，或手动找到按钮
-         console.warn("Event object missing for UI update.");
     }
+    
+    // 💥 检查这个关键循环 💥
+    if(!Shapes[type]) return; 
+    
+    for(let i=0; i<particleCount; i++) {
+        // 调用正确的形状函数，并获取 3D 坐标
+        const pos = Shapes[type](i); 
+
+        // 核心：将形状坐标填充到 targetPositions 数组中
+        targetPositions[i*3] = pos[0];   // X
+        targetPositions[i*3+1] = pos[1]; // Y
+        targetPositions[i*3+2] = pos[2]; // Z
+    }
+    // 注意：这里不需要设置 geometry.attributes.position.needsUpdate = true，
+    // 因为这会在 animate 循环中持续更新。
 };
 
         // --- 4. 音频分析系统 (Audio API) ---
@@ -522,4 +528,5 @@ window.morphTo = function(type, e) {
 </body>
 
 </html>
+
 
