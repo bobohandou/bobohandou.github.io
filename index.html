@@ -216,6 +216,7 @@
                 <button onclick="morphTo('buddha', event)"class="active">打坐</button>
                 <button onclick="morphTo('dna', event)"class="active">DNA螺旋</button>
                 <button onclick="morphTo('sphere', event)"class="active">球体</button>
+                <button onclick="morphTo('diamond', event)">💎 钻石</button> </div>
             </div>
         </div>
 
@@ -311,6 +312,34 @@
                 const z = (Math.random() - 0.5) * 5;
                 return [x * 0.5, y * 0.5, z];
             },
+            diamond: (i) => {
+                const h = 10; // 钻石整体高度
+                const r = 6; // 钻石最大半径
+                const facetHeightRatio = 0.6; // 冠部（上半部分）的高度占总高的比例
+
+                let x, y, z;
+
+                // 随机决定粒子是落在冠部还是亭部
+                if (Math.random() < facetHeightRatio) {
+                    // 冠部 (顶部锥体或多面体)
+                    y = Math.random() * h * facetHeightRatio; // y从底部向上
+                    const currentRadius = r * (1 - y / (h * facetHeightRatio)); // 顶部越小
+                    const angle = Math.random() * Math.PI * 2;
+                    x = Math.cos(angle) * currentRadius * Math.random(); // 随机分布在半径内
+                    z = Math.sin(angle) * currentRadius * Math.random();
+                } else {
+                    // 亭部 (底部锥体)
+                    y = (Math.random() * h * (1 - facetHeightRatio)) - (h * facetHeightRatio); // y从冠部底部向下
+                    const currentRadius = r * (1 + y / (h * (1 - facetHeightRatio))); // 底部越大
+                    const angle = Math.random() * Math.PI * 2;
+                    x = Math.cos(angle) * currentRadius * Math.random();
+                    z = Math.sin(angle) * currentRadius * Math.random();
+                }
+
+                // 将y轴原点调整到钻石中心
+                y -= (h / 2); 
+                return [x, y, z];
+            },
             saturn: (i) => {
                 // 30% 星球，70% 星环
                 if (i < particleCount * 0.3) {
@@ -366,6 +395,7 @@ window.morphTo = function(type, e) {
         document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active'); 
     }
+    
     
     // 💥 检查这个关键循环 💥
     if(!Shapes[type]) return; 
@@ -528,5 +558,6 @@ window.morphTo = function(type, e) {
 </body>
 
 </html>
+
 
 
