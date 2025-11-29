@@ -215,7 +215,7 @@
                 <button onclick="morphTo('flower', event)"class="active">生命之花</button>
                 <button onclick="morphTo('buddha', event)"class="active">打坐</button>
                 <button onclick="morphTo('dna', event)"class="active">DNA螺旋</button>
-                <button onclick="morphTo('sphere', event)"class="active">球体</button></div>
+                <button onclick="morphTo('sphere', event)"class="active">球体</button>
             </div>
         </div>
 
@@ -361,16 +361,27 @@
         };
 
 window.morphTo = function(type, e) {
+    if(!Shapes[type]) return;
+
+    // ... 粒子形态切换代码 ...
+
+    // UI更新 (使用传递进来的事件对象 e)
+    document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
+
+    // 确保 e 存在，以防止在其他地方调用 morphTo 时的潜在错误
+    if (e && e.target) {
     // 确保 UI 逻辑使用 'e' (event object)
     if (e) { 
         document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active'); 
+    } else {
+         // 如果是通过代码调用（例如默认调用），则不执行UI更新，或手动找到按钮
+         console.warn("Event object missing for UI update.");
     }
-
     
     // 💥 检查这个关键循环 💥
     if(!Shapes[type]) return; 
-
+    
     for(let i=0; i<particleCount; i++) {
         // 调用正确的形状函数，并获取 3D 坐标
         const pos = Shapes[type](i); 
