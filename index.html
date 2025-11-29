@@ -215,7 +215,7 @@
                 <button onclick="morphTo('flower', event)"class="active">生命之花</button>
                 <button onclick="morphTo('dna', event)"class="active">DNA螺旋</button>
                 <button onclick="morphTo('sphere', event)"class="active">球体</button>
-                <button onclick="morphTo('diamond', event)">💎 钻石</button>
+                <button onclick="morphTo('diamond', event)"class="active">💎钻石</button>
             </div>
         </div>
 
@@ -382,7 +382,7 @@ window.morphTo = function(type, e) {
         e.target.classList.add('active'); 
     }
     
-    // 💥 检查这个关键循环 💥
+    // 检查形状是否存在
     if(!Shapes[type]) return; 
     
     for(let i=0; i<particleCount; i++) {
@@ -394,11 +394,14 @@ window.morphTo = function(type, e) {
         targetPositions[i*3+1] = pos[1]; // Y
         targetPositions[i*3+2] = pos[2]; // Z
     }
-    // 注意：这里不需要设置 geometry.attributes.position.needsUpdate = true，
-    // 因为这会在 animate 循环中持续更新。
-};
-    // morphTo('heart'); // 之前的默认形状
-morphTo('diamond', { target: document.querySelector('[onclick*="diamond"]') }); // 设置钻石为默认形状，并模拟事件对象更新UI
+}; // 确保 morphTo 函数在这里正确关闭
+
+// ------------------------------------------
+// 初始形状设置 (放在函数定义之后)
+// ------------------------------------------
+
+// 设置钻石为默认形状，并模拟事件对象更新UI
+morphTo('diamond', { target: document.querySelector('[onclick*="diamond"]') }); 
     
     // 💥 检查这个关键循环 💥
     if(!Shapes[type]) return; 
@@ -561,4 +564,5 @@ morphTo('diamond', { target: document.querySelector('[onclick*="diamond"]') }); 
 </body>
 
 </html>
+
 
