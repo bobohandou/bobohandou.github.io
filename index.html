@@ -402,22 +402,7 @@ window.morphTo = function(type, e) {
 
 // 设置钻石为默认形状，并模拟事件对象更新UI
 morphTo('diamond', { target: document.querySelector('[onclick*="diamond"]') }); 
-    
-    // 💥 检查这个关键循环 💥
-    if(!Shapes[type]) return; 
-    
-    for(let i=0; i<particleCount; i++) {
-        // 调用正确的形状函数，并获取 3D 坐标
-        const pos = Shapes[type](i); 
 
-        // 核心：将形状坐标填充到 targetPositions 数组中
-        targetPositions[i*3] = pos[0];   // X
-        targetPositions[i*3+1] = pos[1]; // Y
-        targetPositions[i*3+2] = pos[2]; // Z
-    }
-    // 注意：这里不需要设置 geometry.attributes.position.needsUpdate = true，
-    // 因为这会在 animate 循环中持续更新。
-};
 
         // --- 4. 音频分析系统 (Audio API) ---
         let analyser, dataArray, audioContext;
@@ -564,5 +549,6 @@ morphTo('diamond', { target: document.querySelector('[onclick*="diamond"]') });
 </body>
 
 </html>
+
 
 
