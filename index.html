@@ -345,31 +345,80 @@
                 return [Math.cos(t + offset) * radius, y, Math.sin(t + offset) * radius];
             },
             diamond: (i) => {
-                const h = 10; // 钻石整体高度
-                const r = 6; // 钻石最大半径
-                const facetHeightRatio = 0.6; // 冠部（上半部分）的高度占总高的比例
+                const totalHeight = 12; // 钻石的总高度
+                const maxRadius = 8;    // 钻石的最大半径 (腰围)
+
+                // 比例参考自圆形明亮式切割
+                const tableRatio = 0.55;    // 台面半径占腰围半径的比例
+                const crownHeightRatio = 0.16; // 冠部高度占总高的比例
+                const pavilionHeightRatio = 0.43; // 亭部高度占总高的比例 (总高减去腰围厚度)
+
+                const crownHeight = totalHeight * crownHeightRatio;
+                const pavilionHeight = totalHeight * pavilionHeightRatio;
+                const girdleThickness = totalHeight * (1 - crownHeightRatio - pavilionHeightRatio); // 模拟腰围的厚度
+
+                const halfGirdleThickness = girdleThickness / 2;
 
                 let x, y, z;
 
-                // 随机决定粒子是落在冠部还是亭部
-                if (Math.random() < facetHeightRatio) {
-                    // 冠部 (顶部锥体或多面体)
-                    y = Math.random() * h * facetHeightRatio; // y从底部向上
-                    const currentRadius = r * (1 - y / (h * facetHeightRatio)); // 顶部越小
-                    const angle = Math.random() * Math.PI * 2;
-                    x = Math.cos(angle) * currentRadius * Math.random(); // 随机分布在半径内
-                    z = Math.sin(angle) * currentRadius * Math.random();
-                } else {
-                    // 亭部 (底部锥体)
-                    y = (Math.random() * h * (1 - facetHeightRatio)) - (h * facetHeightRatio); // y从冠部底部向下
-                    const currentRadius = r * (1 + y / (h * (1 - facetHeightRatio))); // 底部越大
+                // 随机决定粒子落在钻石的哪个区域
+                const region = Math.random();
+
+                if (region < 0.1) { // 10% 粒子在台面
+                    // 台面 (Table)
+                    y = crownHeight + halfGirdleThickness; // 台面位于最顶部
+                    const currentRadius = maxRadius * tableRatio;
                     const angle = Math.random() * Math.PI * 2;
                     x = Math.cos(angle) * currentRadius * Math.random();
                     z = Math.sin(angle) * currentRadius * Math.random();
+                } else if (region < 0.4) { // 30% 粒子在冠部 (包括星刻面和腰上刻面)
+                    // 冠部 (Crown)
+                    y = halfGirdleThickness + Math.random() * crownHeight; // 从腰围向上到台面
+                    const ratioFromGirdle = (y - halfGirdleThickness) / crownHeight;
+                    const baseRadius = maxRadius;
+                    const topRadius = maxRadius * tableRatio;
+                    const currentRadius = baseRadius - (baseRadius - topRadius) * ratioFromGirdle;
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    x = Math.cos(angle) * currentRadius * Math.random();
+                    z = Math.sin(angle) * currentRadius * Math.random();
+
+                    // 稍微模拟刻面的棱角，使粒子更集中在“棱线”附近
+                    if (Math.random() < 0.3) { // 30%的冠部粒子更靠近面
+                        const facetAngle = Math.floor(Math.random() * 8) * (Math.PI / 4); // 8个主刻面
+                        x = Math.cos(facetAngle) * currentRadius * (0.8 + Math.random() * 0.2);
+                        z = Math.sin(facetAngle) * currentRadius * (0.8 + Math.random() * 0.2);
+                    }
+
+                } else if (region < 0.5) { // 10% 粒子在腰围 (Girdle)
+                    // 腰围 (Girdle) - 细薄的中间环
+                    y = halfGirdleThickness * (Math.random() * 2 - 1); // 在0点附近
+                    const angle = Math.random() * Math.PI * 2;
+                    x = Math.cos(angle) * maxRadius;
+                    z = Math.sin(angle) * maxRadius;
+                }
+                else { // 50% 粒子在亭部 (Pavilion)
+                    // 亭部 (Pavilion)
+                    y = -pavilionHeight + halfGirdleThickness + Math.random() * pavilionHeight; // 从尖底向上到腰围
+                    const ratioFromCulet = (y - (halfGirdleThickness - pavilionHeight)) / pavilionHeight; // 从尖底到腰围的比例
+                    const baseRadius = 0; // 尖底近似为0
+                    const topRadius = maxRadius; // 腰围半径
+                    const currentRadius = baseRadius + (topRadius - baseRadius) * ratioFromCulet;
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    x = Math.cos(angle) * currentRadius * Math.random();
+                    z = Math.sin(angle) * currentRadius * Math.random();
+
+                    // 稍微模拟刻面的棱角
+                    if (Math.random() < 0.3) {
+                        const facetAngle = Math.floor(Math.random() * 8) * (Math.PI / 4) + Math.PI / 8; // 8个主刻面，错开角度
+                        x = Math.cos(facetAngle) * currentRadius * (0.8 + Math.random() * 0.2);
+                        z = Math.sin(facetAngle) * currentRadius * (0.8 + Math.random() * 0.2);
+                    }
                 }
 
-                // 将y轴原点调整到钻石中心
-                y -= (h / 2); 
+                // 调整Y轴使中心点在腰围处
+                y -= (crownHeight + halfGirdleThickness - totalHeight / 2);
 
                 return [x, y, z];
             }
@@ -549,6 +598,7 @@ morphTo('diamond', { target: document.querySelector('[onclick*="diamond"]') });
 </body>
 
 </html>
+
 
 
 
