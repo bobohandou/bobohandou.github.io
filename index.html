@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -212,10 +212,10 @@
             <div class="grid-buttons">
                 <button onclick="morphTo('heart', event)" class="active">爱心</button>
                 <button onclick="morphTo('saturn', event)"class="active">土星</button>
-                <button onclick="morphTo('flower', event)"class="active">生命之花</button>              
+                <button onclick="morphTo('flower', event)"class="active">生命之花</button>
+                <button onclick="morphTo('buddha', event)"class="active">打坐</button>
                 <button onclick="morphTo('dna', event)"class="active">DNA螺旋</button>
                 <button onclick="morphTo('sphere', event)"class="active">球体</button>
-                <button onclick="morphTo('diamond', event)">💎 钻石</button> </div>
             </div>
         </div>
 
@@ -311,35 +311,6 @@
                 const z = (Math.random() - 0.5) * 5;
                 return [x * 0.5, y * 0.5, z];
             },
-            diamond: (i) => {
-                const h = 10; // 钻石整体高度
-                const r = 6; // 钻石最大半径
-                const facetHeightRatio = 0.6; // 冠部（上半部分）的高度占总高的比例
-
-                let x, y, z;
-
-                // 随机决定粒子是落在冠部还是亭部
-                if (Math.random() < facetHeightRatio) {
-                    // 冠部 (顶部锥体或多面体)
-                    y = Math.random() * h * facetHeightRatio; // y从底部向上
-                    const currentRadius = r * (1 - y / (h * facetHeightRatio)); // 顶部越小
-                    const angle = Math.random() * Math.PI * 2;
-                    x = Math.cos(angle) * currentRadius * Math.random(); // 随机分布在半径内
-                    z = Math.sin(angle) * currentRadius * Math.random();
-                } else {
-                    // 亭部 (底部锥体)
-                    y = (Math.random() * h * (1 - facetHeightRatio)) - (h * facetHeightRatio); // y从冠部底部向下
-                    const currentRadius = r * (1 + y / (h * (1 - facetHeightRatio))); // 底部越大
-                    const angle = Math.random() * Math.PI * 2;
-                    x = Math.cos(angle) * currentRadius * Math.random();
-                    z = Math.sin(angle) * currentRadius * Math.random();
-                }
-
-                // 将y轴原点调整到钻石中心
-                y -= (h / 2); 
-                const VERTICAL_OFFSET = 5.0;
-                return [x, y + VERTICAL_OFFSET, z];
-            },
             saturn: (i) => {
                 // 30% 星球，70% 星环
                 if (i < particleCount * 0.3) {
@@ -372,16 +343,41 @@
                 // 双螺旋
                 const offset = i % 2 === 0 ? 0 : Math.PI;
                 return [Math.cos(t + offset) * radius, y, Math.sin(t + offset) * radius];
+            },
+            buddha: (i) => {
+                // 简单的坐姿抽象
+                const r = Math.random();
+                if(r < 0.2) { // 头
+                   const p = getPoint(2.5); return [p.x, p.y + 6, p.z];
+                } else if (r < 0.6) { // 身
+                   const h = (Math.random() - 0.5) * 6;
+                   const rad = 3.5 - (h+3)*0.3;
+                   const ang = Math.random()*Math.PI*2;
+                   return [Math.cos(ang)*rad, h+1, Math.sin(ang)*rad];
+                } else { // 腿
+                   const p = getPoint(6); return [p.x, p.y * 0.4 - 3, p.z];
+                }
             }
         };
 
 window.morphTo = function(type, e) {
+    if(!Shapes[type]) return;
+
+    // ... 粒子形态切换代码 ...
+
+    // UI更新 (使用传递进来的事件对象 e)
+    document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
+
+    // 确保 e 存在，以防止在其他地方调用 morphTo 时的潜在错误
+    if (e && e.target) {
     // 确保 UI 逻辑使用 'e' (event object)
     if (e) { 
         document.querySelectorAll('.grid-buttons button').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active'); 
+    } else {
+         // 如果是通过代码调用（例如默认调用），则不执行UI更新，或手动找到按钮
+         console.warn("Event object missing for UI update.");
     }
-    
     
     // 💥 检查这个关键循环 💥
     if(!Shapes[type]) return; 
@@ -544,8 +540,3 @@ window.morphTo = function(type, e) {
 </body>
 
 </html>
-
-
-
-
-
